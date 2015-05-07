@@ -86,7 +86,7 @@ class RailsPerfmon::RequestCollector
   end
 
   def build_uri_and_request(request_data)
-    uri = URI.parse(RailsPerfmon.configuration.service_url)
+    uri = URI.parse("#{RailsPerfmon.configuration.service_url}/requests")
     req = Net::HTTP::Post.new(uri)
     req.set_form_data('api_key' => RailsPerfmon.configuration.api_key, 'requests' => request_data.to_json)
     [uri, req]

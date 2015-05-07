@@ -100,20 +100,28 @@ RSpec.describe RailsPerfmon::RequestCollector do
   end
 
   describe '#build_uri_and_request' do
-    it 'parses the uri and sets request form data' do
+    before(:each) do
       RailsPerfmon.configure do |config|
-        config.service_url = 'https://test.example.com:8080/requests'
+        config.service_url = 'https://test.example.com:8080'
         config.api_key = '12345'
       end
+    end
+    let(:data) { [{controller: 'PostsController'}, {controller: 'CommentsController'}] }
 
-      data = [{controller: 'PostsController'}, {controller: 'CommentsController'}]
-
+    it 'parses the uri and sets request form data' do
       uri, request = collector.send(:build_uri_and_request, data)
 
       expect(uri).to be_a(URI)
       expect(request).to be_a(Net::HTTP::Post)
 
       expect(CGI.unescape(request.body)).to eq('api_key=12345&requests=[{"controller":"PostsController"},{"controller":"CommentsController"}]')
+    end
+
+    it 'combines config.service_url and /requests for a final request uri' do
+      uri, request = collector.send(:build_uri_and_request, data)
+
+      expect(uri.path).to eq('/requests')
+      expect(request.uri.to_s).to eq('https://test.example.com:8080/requests')
     end
   end
 
@@ -144,7 +152,7 @@ RSpec.describe RailsPerfmon::RequestCollector do
   describe '#send_request_and_handle_response' do
     before(:each) do
       RailsPerfmon.configure do |config|
-        config.service_url = 'https://test.example.com:8080/requests'
+        config.service_url = 'https://test.example.com:8080'
         config.api_key = '12345'
         config.ssl_verify_mode = OpenSSL::SSL::VERIFY_PEER
       end
@@ -171,7 +179,7 @@ RSpec.describe RailsPerfmon::RequestCollector do
     end
 
     it 'sets use_ssl param correctly' do
-      RailsPerfmon.configuration.service_url = 'http://test.example.com:8080/requests'
+      RailsPerfmon.configuration.service_url = 'http://test.example.com:8080'
 
       expect(Net::HTTP).to receive(:start).
         with('test.example.com', 8080, {open_timeout: 10, use_ssl: false, verify_mode: OpenSSL::SSL::VERIFY_PEER}).

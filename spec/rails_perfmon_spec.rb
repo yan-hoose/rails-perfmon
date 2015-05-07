@@ -26,14 +26,14 @@ RSpec.describe RailsPerfmon do
     context 'setting config' do
       before(:each) do
         RailsPerfmon.configure do |config|
-          config.service_url = 'https://test.example.com:8080/requests'
+          config.service_url = 'https://test.example.com:8080'
           config.api_key = '12345'
           config.ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
         end
       end
 
       it 'has service_url attribute set' do
-        expect(RailsPerfmon.configuration.service_url).to eq('https://test.example.com:8080/requests')
+        expect(RailsPerfmon.configuration.service_url).to eq('https://test.example.com:8080')
       end
 
       it 'has api_key attribute set' do
