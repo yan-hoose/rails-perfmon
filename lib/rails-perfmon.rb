@@ -16,11 +16,12 @@ module RailsPerfmon
   end
 
   class Configuration
-    attr_accessor :service_url, :api_key, :ssl_verify_mode
+    attr_accessor :service_url, :api_key, :ssl_verify_mode, :params_inclusion_threshold
 
     def initialize
       @service_url = nil
       @api_key = nil
+      @params_inclusion_threshold = nil
       @ssl_verify_mode = OpenSSL::SSL::VERIFY_PEER
     end
   end

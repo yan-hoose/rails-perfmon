@@ -18,6 +18,10 @@ RSpec.describe RailsPerfmon do
         expect(RailsPerfmon.configuration.api_key).to be_nil
       end
 
+      it 'has params_inclusion_threshold as nil' do
+        expect(RailsPerfmon.configuration.params_inclusion_threshold).to be_nil
+      end
+
       it 'has ssl_verify_mode as OpenSSL::SSL::VERIFY_PEER' do
         expect(RailsPerfmon.configuration.ssl_verify_mode).to eq(OpenSSL::SSL::VERIFY_PEER)
       end
@@ -28,6 +32,7 @@ RSpec.describe RailsPerfmon do
         RailsPerfmon.configure do |config|
           config.service_url = 'https://test.example.com:8080'
           config.api_key = '12345'
+          config.params_inclusion_threshold = 5
           config.ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
         end
       end
@@ -38,6 +43,10 @@ RSpec.describe RailsPerfmon do
 
       it 'has api_key attribute set' do
         expect(RailsPerfmon.configuration.api_key).to eq('12345')
+      end
+
+      it 'has params_inclusion_threshold attribute set' do
+        expect(RailsPerfmon.configuration.params_inclusion_threshold).to eq(5)
       end
 
       it 'has ssl_verify_mode attribute set' do

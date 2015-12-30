@@ -22,7 +22,7 @@ RSpec.describe RailsPerfmon::RequestCollector do
     end
 
     it 'subscribes to process_action.action_controller notifications' do
-      expect(ActiveSupport::Notifications).to receive(:subscribe).with('process_action.action_controller').once.and_yield('Name', Time.now, Time.now, '123', {})
+      expect(ActiveSupport::Notifications).to receive(:subscribe).with('process_action.action_controller').once.and_yield('Name', Time.now, Time.now, '123', {params: {}})
       RailsPerfmon::RequestCollector.new
     end
   end
@@ -42,12 +42,69 @@ RSpec.describe RailsPerfmon::RequestCollector do
       expect(collector.request_data.length).to eq(0)
     end
 
-    it 'excludes :params and :path from the payload' do
-      collector.send(:add_request, {params: '123', path: '/path'}, Time.now, Time.now)
+    it 'excludes :path from the payload' do
+      collector.send(:add_request, {path: '/path'}, Time.now, Time.now)
 
       data = collector.request_data.first
-      expect(data.has_key?(:params)).to eq(false)
       expect(data.has_key?(:path)).to eq(false)
+    end
+
+    describe 'params param' do
+      it 'does not include params when params_inclusion_threshold is not set' do
+        collector.send(:add_request, {params: {'action' => 'index', 'controller' => 'products', 'some_param' => '123'}}, Time.now, Time.now)
+
+        data = collector.request_data.first
+        expect(data.has_key?(:params)).to eq(false)
+      end
+
+      it 'does not include params when request runtime is below threshold' do
+        RailsPerfmon.configuration.params_inclusion_threshold = 1
+        start_time = Time.now
+        end_time = start_time + 0.999.seconds
+        collector.send(:add_request, {params: {'action' => 'index', 'controller' => 'products', 'some_param' => '123'}}, start_time, end_time)
+
+        data = collector.request_data.first
+        expect(data.has_key?(:params)).to eq(false)
+      end
+
+      it 'does include params when request runtime is the same as threshold' do
+        RailsPerfmon.configuration.params_inclusion_threshold = 1
+        start_time = Time.now
+        end_time = start_time + 1.second
+        collector.send(:add_request, {params: {'action' => 'index', 'controller' => 'products', 'some_param' => '123'}}, start_time, end_time)
+
+        data = collector.request_data.first
+        expect(data.has_key?(:params)).to eq(true)
+      end
+
+      it 'does include params when request runtime is over threshold' do
+        RailsPerfmon.configuration.params_inclusion_threshold = 1
+        start_time = Time.now
+        end_time = start_time + 1.001.seconds
+        collector.send(:add_request, {params: {'action' => 'index', 'controller' => 'products', 'some_param' => '123'}}, start_time, end_time)
+
+        data = collector.request_data.last
+        expect(data.has_key?(:params)).to eq(true)
+      end
+
+      it 'excludes action and controller keys from :params' do
+        RailsPerfmon.configuration.params_inclusion_threshold = 1
+        collector.send(:add_request, {params: {'action' => 'index', 'controller' => 'products', 'some_param' => '123'}}, Time.now, Time.now + 1.second)
+
+        data = collector.request_data.first
+        expect(data.has_key?(:params)).to eq(true)
+        expect(data[:params].has_key?('action')).to eq(false)
+        expect(data[:params].has_key?('controller')).to eq(false)
+        expect(data[:params].has_key?('some_param')).to eq(true)
+      end
+
+      it 'does not include params when it is empty after removing action and controller key-values' do
+        RailsPerfmon.configuration.params_inclusion_threshold = 1
+        collector.send(:add_request, {params: {'action' => 'index', 'controller' => 'products'}}, Time.now, Time.now + 1.second)
+
+        data = collector.request_data.first
+        expect(data.has_key?(:params)).to eq(false)
+      end
     end
 
     it 'adds :total_runtime and :time to the payload' do

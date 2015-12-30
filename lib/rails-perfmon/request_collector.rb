@@ -22,7 +22,19 @@ class RailsPerfmon::RequestCollector
 
   def add_request(payload, start, finish)
     @lock.synchronize do
-      @request_data << payload.except(:params, :path).merge(total_runtime: (finish - start) * 1000, time: start) unless payload.has_key?(:exception)
+      unless payload.has_key?(:exception)
+        runtime = finish - start
+        payload_to_be_sent = payload.except(:path).merge!(total_runtime: runtime * 1000, time: start)
+
+        if RailsPerfmon.configuration.params_inclusion_threshold && RailsPerfmon.configuration.params_inclusion_threshold <= runtime
+          payload_to_be_sent[:params].except!('controller'.freeze, 'action'.freeze)
+          payload_to_be_sent.except!(:params) if payload_to_be_sent[:params].none?
+        else
+          payload_to_be_sent.except!(:params)
+        end
+
+        @request_data << payload_to_be_sent
+      end
     end
     check_if_data_should_be_sent
   end
