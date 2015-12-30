@@ -26,6 +26,7 @@ Then create a new initializer:
 RailsPerfmon.configure do |config|
   config.service_url = 'https://the.host.where.you.set.up.your.monitoring.app'
   config.api_key = 'secret123'
+  config.params_inclusion_threshold = 5 # optional
 end if Rails.env.production?
 ```
 You get the API key from the "Website settings" menu in your monitoring app.
@@ -34,6 +35,8 @@ If the monitoring app is running on HTTPS and with a self-signed cert, add this 
 ```ruby
 config.ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
 ```
+```params_inclusion_threshold``` sets the threshold when request params are added to the payload. A value of 5 means that parameters of all requests that take 5 seconds or more will be included in the request data. A value of ```nil``` (the default) means that params are never added to request data.
+
 And that is it. After you deploy the changes, the performance data of your app should start appearing in the monitoring app. The data is sent after every 5 minutes, so it'll take at least 5 minutes for the data to start appearing.
 
 ## Contributing
